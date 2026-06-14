@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useProductStore, Product } from '@/lib/store/productStore';
 import { Upload, X, Plus } from 'lucide-react';
 import { createProduct } from '@/app/actions/product';
+
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
 
 const categories: Product['category'][] = [
   'Shoes',
@@ -23,7 +26,10 @@ const defaultVariants = {
 
 export default function UploadProductPage() {
   const addProduct = useProductStore((state) => state.addProduct);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     category: 'Shoes' as Product['category'],
@@ -67,6 +73,60 @@ export default function UploadProductPage() {
 
   const removeVariant = (variant: string) => {
     setSelectedVariants(selectedVariants.filter((v) => v !== variant));
+  };
+
+  const processImageFile = async (file: File) => {
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      alert('Please upload a PNG, JPG, or WEBP image.');
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      alert('Image must be 10MB or smaller.');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        image: result.url,
+      }));
+    } catch (error: unknown) {
+      alert(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      void processImageFile(file);
+    }
+    e.target.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      void processImageFile(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -307,10 +367,41 @@ export default function UploadProductPage() {
               </div>
 
               {/* Upload Area */}
-              <div className="border-2 border-dashed border-dark-border rounded-lg p-4 text-center cursor-pointer hover:border-accent-blue transition-colors">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+                onDrop={handleDrop}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                }}
+                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                  isDragging
+                    ? 'border-accent-blue bg-accent-blue/10'
+                    : 'border-dark-border hover:border-accent-blue'
+                } ${isUploadingImage ? 'opacity-50 pointer-events-none' : ''}`}
+              >
                 <Upload className="w-8 h-8 text-accent-blue mx-auto mb-2" />
                 <p className="text-sm text-text-secondary">
-                  Drag and drop or click to upload
+                  {isUploadingImage ? 'Uploading image...' : 'Drag and drop or click to upload'}
                 </p>
                 <p className="text-xs text-text-secondary mt-1">
                   PNG, JPG up to 10MB

@@ -115,17 +115,38 @@ export default function Navbar() {
 
           {/* Mobile Navigation */}
           {isOpen && (
-            <div className="md:hidden pb-4 border-t border-dark-border">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.href}
-                  href={cat.href}
-                  className="block py-2 text-text-secondary hover:text-accent-blue transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {cat.name}
-                </Link>
-              ))}
+            <div className="md:hidden pb-4 border-t border-dark-border pt-2 space-y-3">
+              <div className="space-y-1">
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.href}
+                    href={cat.href}
+                    className="block py-2 text-text-secondary hover:text-accent-blue transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+              <div className="pt-3 border-t border-dark-border">
+                {userRole ? (
+                  <Link
+                    href={userRole === 'admin' ? '/admin' : '/profile'}
+                    className="block w-full text-center px-4 py-2 rounded-lg border border-accent-blue text-accent-blue hover:bg-accent-blue hover:text-dark-bg transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Account
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="block w-full text-center px-4 py-2 rounded-lg bg-accent-blue text-dark-bg hover:shadow-glow-blue transition-all"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Login
+                  </Link>
+                )}
+              </div>
             </div>
           )}
         </div>
