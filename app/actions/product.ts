@@ -16,6 +16,24 @@ interface ProductInput {
   badge?: string;
 }
 
+const DEFAULT_IMAGE = 'https://via.placeholder.com/500x500?text=Product+Image';
+
+function resolveProductImage(image?: string) {
+  const trimmed = image?.trim();
+  if (!trimmed) {
+    return DEFAULT_IMAGE;
+  }
+
+  const isDataUri = /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(trimmed);
+  const isHttpUrl = /^https?:\/\//i.test(trimmed);
+
+  if (isDataUri || isHttpUrl) {
+    return trimmed;
+  }
+
+  return DEFAULT_IMAGE;
+}
+
 export async function createProduct(data: ProductInput) {
   try {
     await dbConnect();
@@ -36,7 +54,7 @@ export async function createProduct(data: ProductInput) {
       compareAtPrice: data.compareAtPrice !== undefined ? Number(data.compareAtPrice) : undefined,
       stock: Number(data.stock),
       description: data.description?.trim(),
-      image: data.image || 'https://via.placeholder.com/500x500?text=Product+Image',
+      image: resolveProductImage(data.image),
       variants: data.variants || [],
       badge: data.badge || '',
     });

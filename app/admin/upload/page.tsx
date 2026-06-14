@@ -103,7 +103,7 @@ export default function UploadProductPage() {
 
       setFormData((prev) => ({
         ...prev,
-        image: result.url,
+        image: result.image || result.url,
       }));
     } catch (error: unknown) {
       alert(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);

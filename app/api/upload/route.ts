@@ -1,5 +1,3 @@
-import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -22,22 +20,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Image must be 10MB or smaller.' }, { status: 400 });
     }
 
-    const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadsDir, { recursive: true });
-
-    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const safeExtension = ['jpg', 'jpeg', 'png', 'webp'].includes(extension) ? extension : 'jpg';
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExtension}`;
-    const filepath = join(uploadsDir, filename);
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filepath, buffer);
+    const base64 = buffer.toString('base64');
+    const dataUri = `data:${file.type};base64,${base64}`;
 
-    return NextResponse.json({ url: `/uploads/${filename}` });
+    return NextResponse.json({
+      url: dataUri,
+      image: dataUri,
+    });
   } catch (error: unknown) {
     console.error('Image upload failed:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to upload image.' },
+      { error: error instanceof Error ? error.message : 'Failed to process image.' },
       { status: 500 }
     );
   }

@@ -33,6 +33,7 @@ const ProductSchema = new mongoose.Schema(
     },
     image: {
       type: String,
+      // Stores either an external URL or a Base64 data URI (data:image/...;base64,...)
       default: 'https://via.placeholder.com/500x500?text=Product+Image',
     },
     variants: {
